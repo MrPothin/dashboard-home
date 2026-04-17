@@ -60,9 +60,12 @@ btnLogin.addEventListener('click', async () => {
   const password = document.getElementById('password').value
   loginError.textContent = ''
 
-  const { error } = await db.auth.signInWithPassword({ email, password })
+  const { data, error } = await db.auth.signInWithPassword({ email, password })
+  console.log('data:', data)
+  console.log('error:', error)
+  
   if (error) {
-    loginError.textContent = 'Email ou mot de passe incorrect.'
+    loginError.textContent = error.message
   } else {
     showDashboard()
   }
