@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Wesley & Lauriane</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="dark">
+
+  <!-- PAGE CONNEXION -->
+  <div id="page-login" class="page active">
+    <div class="login-card">
+      <h1>👋 Bon retour</h1>
+      <p class="subtitle">Wesley & Lauriane</p>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Mot de passe" />
+      <button id="btn-login">Se connecter</button>
+      <p id="login-error" class="error"></p>
+    </div>
+  </div>
+
+  <!-- PAGE DASHBOARD -->
+  <div id="page-dashboard" class="page">
+    <nav class="sidebar">
+      <div class="logo">🏠 Dashboard</div>
+      <a href="#" class="nav-link active" data-page="budget">💰 Budget</a>
+      <a href="#" class="nav-link" data-page="leasing">🚗 Leasing</a>
+      <div class="nav-bottom">
+        <button id="btn-logout">Déconnexion</button>
+        <button id="btn-theme">🌙 Thème</button>
+      </div>
+    </nav>
+    <main class="content">
+      <div id="section-budget" class="section active">
+        <h2>💰 Budget mensuel</h2>
+        <p class="coming-soon">Module en cours de construction...</p>
+      </div>
+      <div id="section-leasing" class="section">
+        <h2>🚗 Leasing & Crédits</h2>
+        <p class="coming-soon">Module en cours de construction...</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
