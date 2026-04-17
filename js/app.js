@@ -349,7 +349,8 @@ async function ouvrirDetailLeasing(id) {
   const kmParcourus = c.kilometrage_actuel - kmDepart
   const kmRestants = Math.max(0, c.kilometrage_max - kmParcourus)
   const kmIdealJour = totalJours > 0 ? c.kilometrage_max / totalJours : 0
-  const kmReelJour = joursEcoules > 0 ? kmParcourus / joursEcoules : 0  const kmAdaptatifJour = joursRestants > 0 ? kmRestants / joursRestants : 0
+  const kmReelJour = joursEcoules > 0 ? kmParcourus / joursEcoules : 0
+  const kmAdaptatifJour = joursRestants > 0 ? kmRestants / joursRestants : 0
   const kmProjection = Math.round(kmParcourus + kmReelJour * joursRestants)
   const depassement = kmProjection - c.kilometrage_max
 
