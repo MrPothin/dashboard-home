@@ -345,11 +345,12 @@ async function ouvrirDetailLeasing(id) {
   const pctTemps = Math.min(100, Math.round((joursEcoules / totalJours) * 100))
   const pctKm = c.kilometrage_max > 0 ? Math.min(100, Math.round((c.kilometrage_actuel / c.kilometrage_max) * 100)) : 0
 
-  const kmRestants = Math.max(0, c.kilometrage_max - c.kilometrage_actuel)
+  const kmDepart = releves && releves.length > 0 ? releves[0].kilometrage : 0
+  const kmParcourus = c.kilometrage_actuel - kmDepart
+  const kmRestants = Math.max(0, c.kilometrage_max - kmParcourus)
   const kmIdealJour = totalJours > 0 ? c.kilometrage_max / totalJours : 0
-  const kmReelJour = joursEcoules > 0 ? c.kilometrage_actuel / joursEcoules : 0
-  const kmAdaptatifJour = joursRestants > 0 ? kmRestants / joursRestants : 0
-  const kmProjection = Math.round(kmReelJour * totalJours)
+  const kmReelJour = joursEcoules > 0 ? kmParcourus / joursEcoules : 0  const kmAdaptatifJour = joursRestants > 0 ? kmRestants / joursRestants : 0
+  const kmProjection = Math.round(kmParcourus + kmReelJour * joursRestants)
   const depassement = kmProjection - c.kilometrage_max
 
   const couleurTemps = pctTemps > 80 ? '#FF6B6B' : pctTemps > 50 ? '#FFA500' : '#4CAF50'
@@ -414,7 +415,7 @@ async function ouvrirDetailLeasing(id) {
 
     <!-- STATS -->
     <div class="stats-grid">
-      <div class="card stat-card"><span>PARCOURUS</span><strong class="stat-value blue">${c.kilometrage_actuel.toLocaleString()}</strong><small>sur ${c.kilometrage_max.toLocaleString()} km</small></div>
+      <div class="card stat-card"><span>PARCOURUS</span><strong class="stat-value blue">${kmParcourus.toLocaleString()}</strong><small>sur ${c.kilometrage_max.toLocaleString()} km</small></div>
       <div class="card stat-card"><span>RESTANTS</span><strong class="stat-value purple">${kmRestants.toLocaleString()}</strong><small>${joursRestants} jours</small></div>
     </div>
 
