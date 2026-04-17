@@ -302,3 +302,111 @@ button:hover { background: var(--accent-hover); }
   .budget-grid { grid-template-columns: 1fr; }
   .bilan-card { grid-column: span 1; }
 }
+/* ===== MODULE LEASING ===== */
+.leasing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.leasing-card { display: flex; flex-direction: column; gap: 16px; }
+
+.leasing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.leasing-header h3 { font-size: 1.1rem; margin-bottom: 4px; }
+.leasing-nom { color: var(--text-muted); font-size: 0.9rem; }
+
+.leasing-mensualite {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: right;
+}
+.leasing-mensualite span { font-size: 0.8rem; color: var(--text-muted); display: block; }
+
+.leasing-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.leasing-info {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.leasing-info span { font-size: 0.75rem; color: var(--text-muted); }
+.leasing-info strong { font-size: 0.95rem; }
+
+.progress-block { display: flex; flex-direction: column; gap: 6px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); }
+.progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+
+.leasing-notes {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.leasing-actions { display: flex; gap: 8px; margin-top: auto; }
+.leasing-actions button { flex: 1; font-size: 0.85rem; padding: 8px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.leasing-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger:hover { border-color: #FF6B6B !important; color: #FF6B6B !important; }
+
+.leasing-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px dashed var(--border);
+  background: transparent;
+  min-height: 200px;
+  transition: all 0.2s ease;
+}
+.leasing-add:hover { border-color: var(--accent); }
+.leasing-add-inner { text-align: center; color: var(--text-muted); }
+.leasing-add-inner span { font-size: 2rem; }
+.leasing-add-inner p { margin-top: 8px; }
+
+/* MODAL */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal.hidden { display: none; }
+.modal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
+.modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+.modal-actions button { flex: 1; }
+.btn-primary { background: var(--accent) !important; color: white !important; }
+
+@media (max-width: 768px) {
+  .leasing-grid { grid-template-columns: 1fr; }
+}

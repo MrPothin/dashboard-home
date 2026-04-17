@@ -26,6 +26,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
     document.getElementById('section-' + target).classList.add('active')
     if (target === 'budget') initBudget()
+    if (target === 'leasing') initLeasing()
   })
 })
 
@@ -248,4 +249,149 @@ async function sauvegarderVariables() {
     await db.from('budget_variables').update({ label, montant }).eq('id', id)
   }
   await chargerMois(currentMois, currentAnnee)
+}
+
+// ===== MODULE LEASING =====
+async function initLeasing() {
+  const { data } = await db.from('leasing').select('*').order('date_fin')
+  renderLeasing(data || [])
+}
+
+function renderLeasing(contrats) {
+  const today = new Date()
+
+  document.getElementById('leasing-content').innerHTML = `
+    <div class="leasing-grid">
+      ${contrats.map(c => {
+        const debut = new Date(c.date_debut)
+        const fin = new Date(c.date_fin)
+        const totalMois = Math.round((fin - debut) / (1000 * 60 * 60 * 24 * 30))
+        const moisEcoules = Math.round((today - debut) / (1000 * 60 * 60 * 24 * 30))
+        const moisRestants = Math.max(0, Math.round((fin - today) / (1000 * 60 * 60 * 24 * 30)))
+        const pctTemps = Math.min(100, Math.round((moisEcoules / totalMois) * 100))
+        const pctKm = c.kilometrage_max > 0 ? Math.min(100, Math.round((c.kilometrage_actuel / c.kilometrage_max) * 100)) : 0
+        const kmRestants = Math.max(0, c.kilometrage_max - c.kilometrage_actuel)
+        const couleur = pctTemps > 80 ? '#FF6B6B' : pctTemps > 50 ? '#FFA500' : '#4CAF50'
+
+        return `
+          <div class="card leasing-card">
+            <div class="leasing-header">
+              <div>
+                <h3>🚗 ${c.vehicule}</h3>
+                <span class="leasing-nom">${c.nom}</span>
+              </div>
+              <div class="leasing-mensualite">${c.mensualite.toFixed(2)} €<span>/mois</span></div>
+            </div>
+
+            <div class="leasing-info-grid">
+              <div class="leasing-info"><span>Début</span><strong>${debut.toLocaleDateString('fr-FR')}</strong></div>
+              <div class="leasing-info"><span>Fin</span><strong>${fin.toLocaleDateString('fr-FR')}</strong></div>
+              <div class="leasing-info"><span>Mois restants</span><strong>${moisRestants}</strong></div>
+              <div class="leasing-info"><span>Coût restant</span><strong>${(moisRestants * c.mensualite).toFixed(0)} €</strong></div>
+            </div>
+
+            <div class="progress-block">
+              <div class="progress-label"><span>Durée écoulée</span><span>${pctTemps}%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pctTemps}%; background:${couleur}"></div></div>
+            </div>
+
+            ${c.kilometrage_max > 0 ? `
+            <div class="progress-block">
+              <div class="progress-label"><span>Kilométrage (${c.kilometrage_actuel.toLocaleString()} / ${c.kilometrage_max.toLocaleString()} km)</span><span>${kmRestants.toLocaleString()} km restants</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pctKm}%; background:${pctKm > 80 ? '#FF6B6B' : '#4F46E5'}"></div></div>
+            </div>` : ''}
+
+            ${c.notes ? `<p class="leasing-notes">${c.notes}</p>` : ''}
+
+            <div class="leasing-actions">
+              <button onclick="editLeasing('${c.id}')">✏️ Modifier</button>
+              <button class="btn-danger" onclick="supprimerLeasing('${c.id}')">🗑️ Supprimer</button>
+            </div>
+          </div>
+        `
+      }).join('')}
+
+      <div class="card leasing-add" onclick="ajouterLeasing()">
+        <div class="leasing-add-inner">
+          <span>+</span>
+          <p>Ajouter un contrat</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="leasing-modal" class="modal hidden">
+      <div class="modal-card">
+        <h3 id="modal-title">Nouveau contrat</h3>
+        <div class="form-group"><label>Nom</label><input type="text" id="l-nom" placeholder="Ex: Leasing Lauriane" /></div>
+        <div class="form-group"><label>Véhicule</label><input type="text" id="l-vehicule" placeholder="Ex: Peugeot e-208" /></div>
+        <div class="form-group"><label>Mensualité (€)</label><input type="number" id="l-mensualite" /></div>
+        <div class="form-group"><label>Date début</label><input type="date" id="l-debut" /></div>
+        <div class="form-group"><label>Date fin</label><input type="date" id="l-fin" /></div>
+        <div class="form-group"><label>Km max</label><input type="number" id="l-km-max" /></div>
+        <div class="form-group"><label>Km actuels</label><input type="number" id="l-km-actuel" /></div>
+        <div class="form-group"><label>Notes</label><input type="text" id="l-notes" /></div>
+        <div class="modal-actions">
+          <button onclick="fermerModal()">Annuler</button>
+          <button class="btn-primary" onclick="sauvegarderLeasing()">💾 Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+let leasingEditId = null
+
+function ajouterLeasing() {
+  leasingEditId = null
+  document.getElementById('modal-title').textContent = 'Nouveau contrat'
+  document.querySelectorAll('#leasing-modal input').forEach(i => i.value = '')
+  document.getElementById('leasing-modal').classList.remove('hidden')
+}
+
+async function editLeasing(id) {
+  const { data } = await db.from('leasing').select('*').eq('id', id).single()
+  leasingEditId = id
+  document.getElementById('modal-title').textContent = 'Modifier le contrat'
+  document.getElementById('l-nom').value = data.nom
+  document.getElementById('l-vehicule').value = data.vehicule
+  document.getElementById('l-mensualite').value = data.mensualite
+  document.getElementById('l-debut').value = data.date_debut
+  document.getElementById('l-fin').value = data.date_fin
+  document.getElementById('l-km-max').value = data.kilometrage_max
+  document.getElementById('l-km-actuel').value = data.kilometrage_actuel
+  document.getElementById('l-notes').value = data.notes
+  document.getElementById('leasing-modal').classList.remove('hidden')
+}
+
+function fermerModal() {
+  document.getElementById('leasing-modal').classList.add('hidden')
+}
+
+async function sauvegarderLeasing() {
+  const data = {
+    nom: document.getElementById('l-nom').value,
+    vehicule: document.getElementById('l-vehicule').value,
+    mensualite: parseFloat(document.getElementById('l-mensualite').value) || 0,
+    date_debut: document.getElementById('l-debut').value,
+    date_fin: document.getElementById('l-fin').value,
+    kilometrage_max: parseInt(document.getElementById('l-km-max').value) || 0,
+    kilometrage_actuel: parseInt(document.getElementById('l-km-actuel').value) || 0,
+    notes: document.getElementById('l-notes').value
+  }
+
+  if (leasingEditId) {
+    await db.from('leasing').update(data).eq('id', leasingEditId)
+  } else {
+    await db.from('leasing').insert(data)
+  }
+
+  fermerModal()
+  initLeasing()
+}
+
+async function supprimerLeasing(id) {
+  if (!confirm('Supprimer ce contrat ?')) return
+  await db.from('leasing').delete().eq('id', id)
+  initLeasing()
 }
