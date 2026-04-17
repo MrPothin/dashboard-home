@@ -5,6 +5,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
+const moisNoms = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
+
 // ===== THÈME =====
 const savedTheme = localStorage.getItem('theme') || 'dark'
 document.body.className = savedTheme
@@ -25,6 +27,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.add('active')
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
     document.getElementById('section-' + target).classList.add('active')
+    if (target === 'accueil') initAccueil()
     if (target === 'budget') initBudget()
     if (target === 'leasing') initLeasing()
   })
@@ -34,7 +37,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
 function showDashboard() {
   document.getElementById('page-login').classList.remove('active')
   document.getElementById('page-dashboard').classList.add('active')
-  initBudget()
+  initAccueil()
 }
 
 function showLogin() {
@@ -603,4 +606,134 @@ async function supprimerLeasing(id) {
   if (!confirm('Supprimer ce contrat ?')) return
   await db.from('leasing').delete().eq('id', id)
   initLeasing()
+}
+// ===== ACCUEIL =====
+async function initAccueil() {
+  const now = new Date()
+  const mois = now.getMonth() + 1
+  const annee = now.getFullYear()
+
+  // Charger données budget du mois
+  const { data: moisData } = await db.from('budget_mois').select('*').eq('mois', mois).eq('annee', annee).single()
+  const { data: charges } = await db.from('budget_charges_fixes').select('*').eq('actif', true)
+  const { data: variables } = await db.from('budget_variables').select('*').eq('mois', mois).eq('annee', annee)
+  const { data: contrats } = await db.from('leasing').select('*').order('date_fin')
+
+  // Calculs budget
+  const totalFixes = (charges || []).filter(c => c.categorie === 'fixes').reduce((s, c) => s + parseFloat(c.montant), 0)
+  const totalAbonnements = (charges || []).filter(c => c.categorie === 'abonnements').reduce((s, c) => s + parseFloat(c.montant), 0)
+  const totalEpargne = (charges || []).filter(c => c.categorie === 'epargne').reduce((s, c) => s + parseFloat(c.montant), 0)
+  const totalVariables = (variables || []).reduce((s, v) => s + parseFloat(v.montant), 0)
+  const totalRevenus = moisData ? (moisData.salaire_wesley + moisData.salaire_lauriane + moisData.aides + moisData.primes + moisData.autres_revenus) : 0
+  const totalDepenses = totalFixes + totalAbonnements + totalVariables
+  const solde = totalRevenus - totalDepenses - totalEpargne
+
+  // Météo Manosque
+  let meteo = null
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=43.8367&longitude=5.7869&current=temperature_2m,weathercode,windspeed_10m&timezone=Europe/Paris')
+    const json = await res.json()
+    meteo = json.current
+  } catch(e) {}
+
+  function meteoIcon(code) {
+    if (code === 0) return '☀️'
+    if (code <= 3) return '⛅'
+    if (code <= 48) return '🌫️'
+    if (code <= 67) return '🌧️'
+    if (code <= 77) return '❄️'
+    if (code <= 82) return '🌦️'
+    if (code <= 99) return '⛈️'
+    return '🌡️'
+  }
+
+  function meteoLabel(code) {
+    if (code === 0) return 'Ciel dégagé'
+    if (code <= 3) return 'Partiellement nuageux'
+    if (code <= 48) return 'Brouillard'
+    if (code <= 67) return 'Pluie'
+    if (code <= 77) return 'Neige'
+    if (code <= 82) return 'Averses'
+    if (code <= 99) return 'Orage'
+    return 'Conditions variables'
+  }
+
+  const joursNoms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
+
+  document.getElementById('accueil-content').innerHTML = `
+    <div class="accueil-header">
+      <div>
+        <h2>Bonjour Wesley 👋</h2>
+        <p class="accueil-date">${joursNoms[now.getDay()]} ${now.getDate()} ${moisNoms[now.getMonth()]} ${annee}</p>
+      </div>
+      ${meteo ? `
+      <div class="meteo-widget">
+        <span class="meteo-icon">${meteoIcon(meteo.weathercode)}</span>
+        <div>
+          <strong>${Math.round(meteo.temperature_2m)}°C</strong>
+          <small>${meteoLabel(meteo.weathercode)}</small>
+          <small>💨 ${Math.round(meteo.windspeed_10m)} km/h</small>
+        </div>
+        <small class="meteo-lieu">Manosque</small>
+      </div>` : ''}
+    </div>
+
+    <div class="accueil-grid">
+
+      <!-- CARTE BUDGET -->
+      <div class="card accueil-card" onclick="naviguerVers('budget')">
+        <div class="accueil-card-header">
+          <span class="accueil-card-icon">💰</span>
+          <h3>Budget</h3>
+          <span class="accueil-card-arrow">→</span>
+        </div>
+        <p class="accueil-card-sub">${MOIS_NOMS[mois - 1]} ${annee}</p>
+        <div class="accueil-solde ${solde >= 0 ? 'green' : 'red'}">${solde >= 0 ? '+' : ''}${solde.toFixed(0)} €</div>
+        <p class="accueil-card-label">Solde disponible</p>
+        <div class="accueil-mini-stats">
+          <div><span>Revenus</span><strong>${totalRevenus.toFixed(0)} €</strong></div>
+          <div><span>Dépenses</span><strong>${totalDepenses.toFixed(0)} €</strong></div>
+          <div><span>Épargne</span><strong>${totalEpargne.toFixed(0)} €</strong></div>
+        </div>
+      </div>
+
+      <!-- CARTE LEASING -->
+      <div class="card accueil-card" onclick="naviguerVers('leasing')">
+        <div class="accueil-card-header">
+          <span class="accueil-card-icon">🚗</span>
+          <h3>Leasing</h3>
+          <span class="accueil-card-arrow">→</span>
+        </div>
+        <p class="accueil-card-sub">${(contrats || []).length} contrat(s) actif(s)</p>
+        ${(contrats || []).map(c => {
+          const fin = new Date(c.date_fin)
+          const joursRestants = Math.max(0, Math.round((fin - now) / (1000 * 60 * 60 * 24)))
+          const pct = Math.min(100, Math.round(((now - new Date(c.date_debut)) / (fin - new Date(c.date_debut))) * 100))
+          const couleur = pct > 80 ? '#FF6B6B' : pct > 50 ? '#FFA500' : '#4CAF50'
+          return `
+            <div class="accueil-leasing-row">
+              <div class="accueil-leasing-info">
+                <strong>${c.vehicule}</strong>
+                <small>${joursRestants} jours restants</small>
+              </div>
+              <div class="progress-bar" style="flex:1;margin:0 12px">
+                <div class="progress-fill" style="width:${pct}%;background:${couleur}"></div>
+              </div>
+              <span style="font-size:0.85rem;color:var(--text-muted)">${pct}%</span>
+            </div>
+          `
+        }).join('')}
+      </div>
+
+    </div>
+  `
+}
+
+function naviguerVers(page) {
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'))
+  document.querySelector(`[data-page="${page}"]`).classList.add('active')
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+  document.getElementById('section-' + page).classList.add('active')
+  if (page === 'budget') initBudget()
+  if (page === 'leasing') initLeasing()
 }
