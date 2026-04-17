@@ -547,3 +547,91 @@ button:hover { background: var(--accent-hover); }
 
 .blue { color: #4F46E5; }
 .orange { color: #FFA500; }
+
+/* ===== ACCUEIL ===== */
+.accueil-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.accueil-header h2 { font-size: 1.8rem; }
+.accueil-date { color: var(--text-muted); margin-top: 4px; }
+
+.meteo-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.meteo-icon { font-size: 2rem; }
+.meteo-widget strong { font-size: 1.4rem; display: block; }
+.meteo-widget small { display: block; color: var(--text-muted); font-size: 0.8rem; }
+.meteo-lieu { color: var(--accent) !important; font-size: 0.75rem !important; }
+
+.accueil-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.accueil-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.accueil-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.accueil-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.accueil-card-icon { font-size: 1.4rem; }
+.accueil-card-header h3 { flex: 1; font-size: 1.1rem; }
+.accueil-card-arrow { color: var(--text-muted); font-size: 1.2rem; }
+.accueil-card-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px; }
+
+.accueil-solde {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+.accueil-card-label { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; }
+
+.accueil-mini-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+.accueil-mini-stats > div { display: flex; flex-direction: column; gap: 2px; }
+.accueil-mini-stats span { font-size: 0.75rem; color: var(--text-muted); }
+.accueil-mini-stats strong { font-size: 0.95rem; }
+
+.accueil-leasing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.accueil-leasing-info { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+.accueil-leasing-info strong { font-size: 0.9rem; }
+.accueil-leasing-info small { font-size: 0.8rem; color: var(--text-muted); }
+
+@media (max-width: 768px) {
+  .accueil-grid { grid-template-columns: 1fr; }
+  .accueil-header { flex-direction: column; }
+}
