@@ -24,7 +24,8 @@
   <div id="page-dashboard" class="page">
     <nav class="sidebar">
       <div class="logo">🏠 Dashboard</div>
-      <a href="#" class="nav-link active" data-page="budget">💰 Budget</a>
+      <a href="#" class="nav-link active" data-page="accueil">🏠 Accueil</a>
+      <a href="#" class="nav-link" data-page="budget">💰 Budget</a>
       <a href="#" class="nav-link" data-page="leasing">🚗 Leasing</a>
       <div class="nav-bottom">
         <button id="btn-logout">Déconnexion</button>
@@ -32,7 +33,10 @@
       </div>
     </nav>
     <main class="content">
-      <div id="section-budget" class="section active">
+      <div id="section-accueil" class="section active">
+       <div id="accueil-content"></div>
+    </div>
+      <div id="section-budget" class="section">
         <div class="section-header">
             <h2>💰 Budget mensuel</h2>
             <select id="budget-selecteur-mois"></select>
