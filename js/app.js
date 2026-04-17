@@ -1,7 +1,7 @@
 // ===== CONFIGURATION SUPABASE =====
 // Remplace ces deux valeurs par celles de ton projet Supabase
 const SUPABASE_URL = 'https://fwnzesnicmzjqkvbjspr.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_G79je0Tgl-XrEUmkv5l9hA_vBW_kE0iI'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3bnplc25pY216anFrdmJqc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNzE1MzgsImV4cCI6MjA5MTk0NzUzOH0.vGtVxpIrVa4MViPBdk5B6MX-xdMzfVsB9M8N2qCAAas'
 
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
