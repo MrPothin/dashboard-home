@@ -768,6 +768,108 @@ body.light .badge-purple { color: #8B5CF6; }
 .tl-niveau-edit input[type="text"] { flex: 1; }
 .tl-niveau-edit .btn-icon { padding: 8px 10px; }
 
+/* ===== CARTE (lieux visités) ===== */
+.carte-map {
+  height: calc(100vh - var(--nav-h) - 200px);
+  min-height: 380px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+  z-index: 0; /* isole les z-index internes de Leaflet du reste de l'UI */
+  background: #0a0a12;
+}
+
+/* Point lumineux avec glow */
+.lieu-marker { background: none; border: none; }
+.lieu-dot {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 6px 2px var(--c), 0 0 14px 4px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.lieu-dot-inline {
+  position: static;
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+/* Bouton supprimer sur le point : visible au survol (PC uniquement) */
+.lieu-suppr {
+  display: none;
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1A1A2E;
+  border: 1px solid #2A2A45;
+  color: #FF6B6B;
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .lieu-marker:hover .lieu-suppr { display: block; }
+}
+.lieu-suppr:hover { background: #2A2A45; }
+
+/* Liste des lieux (suppression sur mobile) */
+.carte-liste { margin-bottom: 16px; max-height: 300px; overflow-y: auto; }
+.carte-liste-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.carte-liste-row:last-child { border-bottom: none; }
+.carte-liste-info { flex: 1; display: flex; flex-direction: column; }
+.carte-liste-info small { color: var(--text-muted); font-size: 0.75rem; }
+
+/* Suggestions Nominatim */
+.lieu-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.lieu-suggestion {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-align: left;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lieu-suggestion:hover { border-color: var(--accent); background: var(--bg); }
+
+.lieu-choisi-info {
+  color: #4CAF50;
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+  word-break: break-word;
+}
+.lieu-choisi-info.hidden { display: none; }
+
+/* Tooltips Leaflet adaptés au thème sombre de la carte */
+.leaflet-tooltip {
+  background: #1A1A2E;
+  border: 1px solid #2A2A45;
+  color: #E8E8F0;
+  border-radius: 8px;
+  font-family: inherit;
+}
+.leaflet-tooltip-top::before { border-top-color: #2A2A45; }
+.leaflet-container { font-family: inherit; }
+
 /* =====================================================
    DESKTOP (≥ 768px) : sidebar à gauche, topbar masquée
    ===================================================== */
@@ -848,6 +950,8 @@ body.light .badge-purple { color: #8B5CF6; }
   .tl-row-label { width: 80px; }
 
   .detail-card { padding: 24px; }
+
+  .carte-map { height: calc(100vh - 160px); }
 }
 
 /* Grand écran */

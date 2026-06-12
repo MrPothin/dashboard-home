@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Personal household dashboard (budget, car leasing tracking, tier lists, home page with weather) for Wesley & Lauriane, deployed on Vercel as a static site. All UI text, code comments, identifiers, and commit messages are in French — keep it that way.
+Personal household dashboard (budget, car leasing tracking, tier lists, visited-places map, home page with weather) for Wesley & Lauriane, deployed on Vercel as a static site. All UI text, code comments, identifiers, and commit messages are in French — keep it that way.
 
 ## Running
 
@@ -29,6 +29,7 @@ Single-page app in vanilla JS, all logic in `js/app.js`:
 - **Rendering pattern**: HTML built with template literals; interactivity uses inline `onclick`/`ondrop` attributes, so any handler referenced in a template **must be a top-level function declaration** in `app.js`. User-provided strings must go through `esc()` in templates. Modals are rendered as part of the section HTML and toggled with the `hidden` class.
 - **Layout**: mobile first. `.sidebar` is a fixed bottom bar on mobile and becomes a left sidebar at ≥768px; `.topbar` (theme/logout) is mobile-only. Buttons with classes `.btn-theme`/`.btn-logout` exist in both bars and are wired with `$$()` loops — keep both in sync.
 - **Tier list voting model**: items are never assigned a level directly; each author's placement lives in `tierlist_votes` (`auteur` ∈ wesley/lauriane). The per-author view supports HTML5 drag & drop **and** tap-to-classify (modal) because HTML5 DnD doesn't work on touch. The "côte à côte" view is read-only.
-- **Leasing**: the starting kilometrage of a contract is its **first relevé**, not 0 — all percentage/projection math uses `kilometrage_actuel - kmDepart`.
+- **Leasing**: the starting kilometrage of a contract is its **first relevé**, not 0 — all percentage/projection math uses `kilometrage_actuel - kmDepart`. The detail graph's X axis spans the relevés period only (not the whole contract).
+- **Carte**: Leaflet (CDN) + CartoDB Dark Matter tiles + Nominatim geocoding (no API key, debounced after 3 chars). Table `lieux_visites` (see `supabase/lieux.sql`). Markers are `L.divIcon` dots with CSS box-shadow glow, colored by year (HSL hue 210→15, old→recent). The map div needs `z-index: 0` isolation so Leaflet's internal z-indexes don't overlay the app's nav/modals; `carteMap.remove()` is called before re-init.
 - **Theme**: dark/light via `body.dark`/`body.light` persisted in `localStorage`; all colors go through CSS variables in `css/style.css` (`--bg`, `--card`, `--text`, `--text-muted`, `--border`, `--accent`) — use those variables in new styles so both themes work.
 - **Weather**: accueil fetches Open-Meteo (hardcoded Manosque coordinates, lat 43.8367 / lon 5.7869), no API key.

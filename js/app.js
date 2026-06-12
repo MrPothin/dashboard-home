@@ -54,6 +54,7 @@ const MODULES = [
   { id: 'budget', label: 'Budget', icon: '💰', init: initBudget },
   { id: 'leasing', label: 'Leasing', icon: '🚗', init: initLeasing },
   { id: 'tierlist', label: 'Tier List', icon: '🏆', init: initTierlist },
+  { id: 'carte', label: 'Carte', icon: '🗺️', init: initCarte },
 ]
 
 function renderNav() {
@@ -708,15 +709,20 @@ async function ouvrirDetailLeasing(id) {
   const couleurTemps = pctTemps > 80 ? '#FF6B6B' : pctTemps > 50 ? '#FFA500' : '#4CAF50'
   const couleurKm = pctKm > 80 ? '#FF6B6B' : pctKm > 50 ? '#FFA500' : '#4F46E5'
 
-  // Graphique SVG : km parcourus réels vs rythme idéal
+  // Graphique SVG : km parcourus réels vs rythme idéal,
+  // zoomé sur la période des relevés (pas toute la durée du contrat)
   let graphique = ''
   if (releves && releves.length > 1) {
     const w = 500, h = 200, pad = 40
-    const maxParcourus = Math.max(...releves.map(r => r.kilometrage - kmDepart))
-    const yMax = Math.max(c.kilometrage_max, maxParcourus) * 1.05 || 1
-    const tMin = debut.getTime()
-    const tMax = fin.getTime()
+    const tMin = new Date(releves[0].date).getTime()
+    const tMax = new Date(releves[releves.length - 1].date).getTime()
     const tRange = tMax - tMin || 1
+
+    // Km idéaux à l'instant t (rythme idéal depuis le début du contrat)
+    const idealAt = (t) => kmIdealJour * (t - debut.getTime()) / JOUR_MS
+
+    const maxParcourus = Math.max(...releves.map(r => r.kilometrage - kmDepart))
+    const yMax = Math.max(maxParcourus, idealAt(tMax)) * 1.1 || 1
 
     const px = (t) => pad + ((t - tMin) / tRange) * (w - pad * 2)
     const py = (km) => h - pad - (km / yMax) * (h - pad * 2)
@@ -725,7 +731,7 @@ async function ouvrirDetailLeasing(id) {
 
     graphique = `
       <svg viewBox="0 0 ${w} ${h}" class="leasing-graph">
-        <line x1="${px(tMin)}" y1="${py(0)}" x2="${px(tMax)}" y2="${py(c.kilometrage_max)}"
+        <line x1="${px(tMin)}" y1="${py(idealAt(tMin))}" x2="${px(tMax)}" y2="${py(idealAt(tMax))}"
           stroke="#666" stroke-width="1.5" stroke-dasharray="6,4"/>
         <polyline points="${points}" fill="none" stroke="#4F46E5" stroke-width="2.5" stroke-linejoin="round"/>
         ${releves.map(r => `<circle cx="${px(new Date(r.date).getTime())}" cy="${py(r.kilometrage - kmDepart)}" r="4" fill="#4F46E5"/>`).join('')}
@@ -1308,6 +1314,202 @@ async function tlSauvegarderNiveaux() {
   }
   tlFermerNiveaux()
   ouvrirTierlist(tlState.id)
+}
+
+// =====================================================
+// MODULE CARTE (lieux visités)
+// =====================================================
+let carteMap = null
+let carteListeVisible = false
+let lieuxCache = []
+let lieuSuggestions = []
+let lieuChoisi = null
+let nominatimTimer = null
+
+// Couleur selon l'année : bleu froid (ancien) → orange/rouge chaud (récent)
+function couleurLieu(annee, minA, maxA) {
+  if (!annee) return '#AAAACC'
+  const t = maxA > minA ? (annee - minA) / (maxA - minA) : 1
+  const hue = 210 - t * 195 // 210 (bleu) → 15 (rouge orangé)
+  return `hsl(${hue}, 90%, 60%)`
+}
+
+async function initCarte() {
+  if (carteMap) { carteMap.remove(); carteMap = null }
+  $('#content').innerHTML = '<p class="muted">Chargement…</p>'
+
+  const { data, error } = await db.from('lieux_visites').select('*').order('created_at', { ascending: true })
+
+  if (error) {
+    $('#content').innerHTML = `
+      <div class="section-header"><h2>🗺️ Carte</h2></div>
+      <div class="card"><p class="muted">La table <code>lieux_visites</code> n'existe pas encore dans Supabase.<br>
+      Exécutez le fichier <code>supabase/lieux.sql</code> dans l'éditeur SQL de Supabase, puis rechargez.</p></div>
+    `
+    return
+  }
+
+  lieuxCache = data || []
+  renderCarte()
+}
+
+function renderCarte() {
+  const lieux = lieuxCache
+  const annees = lieux.filter(l => l.annee).map(l => l.annee)
+  const minA = annees.length ? Math.min(...annees) : 0
+  const maxA = annees.length ? Math.max(...annees) : 0
+
+  $('#content').innerHTML = `
+    <div class="section-header">
+      <h2>🗺️ Carte <span class="badge badge-indigo">${lieux.length} lieu${lieux.length > 1 ? 'x' : ''}</span></h2>
+      <div class="section-header-actions">
+        <button class="btn-ghost" onclick="basculerListeLieux()">📋 Liste</button>
+        <button class="btn-primary" onclick="ouvrirAjoutLieu()">+ Ajouter un lieu</button>
+      </div>
+    </div>
+
+    <div id="carte-liste" class="card carte-liste ${carteListeVisible ? '' : 'hidden'}">
+      ${lieux.length ? lieux.map(l => `
+        <div class="carte-liste-row">
+          <span class="lieu-dot lieu-dot-inline" style="--c:${couleurLieu(l.annee, minA, maxA)}"></span>
+          <div class="carte-liste-info"><strong>${esc(l.nom)}</strong>${l.annee ? `<small>${l.annee}</small>` : ''}</div>
+          <button class="btn-delete" onclick="supprimerLieu('${l.id}')">✕</button>
+        </div>
+      `).join('') : '<p class="muted">Aucun lieu pour l\'instant.</p>'}
+    </div>
+
+    <div id="carte-map" class="carte-map"></div>
+
+    <!-- MODAL AJOUT LIEU -->
+    <div id="lieu-modal" class="modal hidden">
+      <div class="modal-card">
+        <h3>📍 Ajouter un lieu</h3>
+        <div class="form-group">
+          <label>Rechercher un lieu</label>
+          <input type="text" id="lieu-recherche" placeholder="Ex: Manosque, Rome, Tokyo…" autocomplete="off"
+            oninput="rechercherLieu(this.value)" />
+        </div>
+        <div id="lieu-suggestions" class="lieu-suggestions"></div>
+        <p id="lieu-choisi-info" class="lieu-choisi-info hidden"></p>
+        <div class="form-group">
+          <label>Année de visite (optionnel)</label>
+          <input type="number" inputmode="numeric" id="lieu-annee" placeholder="Ex: 2019" min="1900" max="2100" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-ghost" onclick="fermerAjoutLieu()">Annuler</button>
+          <button class="btn-primary" id="lieu-confirmer" disabled onclick="confirmerLieu()">✓ Confirmer</button>
+        </div>
+      </div>
+    </div>
+  `
+
+  // Carte Leaflet — fond CartoDB Dark Matter
+  carteMap = L.map('carte-map', { zoomControl: true, worldCopyJump: true })
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(carteMap)
+
+  if (lieux.length === 0) {
+    carteMap.setView([46.6, 2.5], 5) // France par défaut
+  } else {
+    const bounds = L.latLngBounds(lieux.map(l => [l.latitude, l.longitude]))
+    carteMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 })
+  }
+
+  // Points lumineux
+  lieux.forEach(l => {
+    const couleur = couleurLieu(l.annee, minA, maxA)
+    const icon = L.divIcon({
+      className: 'lieu-marker',
+      html: `
+        <span class="lieu-dot" style="--c:${couleur}"></span>
+        <button class="lieu-suppr" onclick="supprimerLieu('${l.id}', event)">✕</button>
+      `,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    })
+    L.marker([l.latitude, l.longitude], { icon })
+      .addTo(carteMap)
+      .bindTooltip(`${esc(l.nom)}${l.annee ? ' · ' + l.annee : ''}`, { direction: 'top', offset: [0, -10] })
+  })
+}
+
+function basculerListeLieux() {
+  carteListeVisible = !carteListeVisible
+  $('#carte-liste').classList.toggle('hidden', !carteListeVisible)
+}
+
+// --- Ajout d'un lieu (géocodage Nominatim, sans clé API) ---
+function ouvrirAjoutLieu() {
+  lieuChoisi = null
+  lieuSuggestions = []
+  $('#lieu-recherche').value = ''
+  $('#lieu-annee').value = ''
+  $('#lieu-suggestions').innerHTML = ''
+  $('#lieu-choisi-info').classList.add('hidden')
+  $('#lieu-confirmer').disabled = true
+  $('#lieu-modal').classList.remove('hidden')
+  $('#lieu-recherche').focus()
+}
+
+function fermerAjoutLieu() {
+  $('#lieu-modal').classList.add('hidden')
+}
+
+function rechercherLieu(q) {
+  clearTimeout(nominatimTimer)
+  if (q.trim().length < 3) {
+    $('#lieu-suggestions').innerHTML = ''
+    return
+  }
+  nominatimTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=fr&q=${encodeURIComponent(q.trim())}`)
+      const data = await res.json()
+      lieuSuggestions = data || []
+      $('#lieu-suggestions').innerHTML = lieuSuggestions.map((s, i) => `
+        <button class="lieu-suggestion" onclick="choisirLieu(${i})">📍 ${esc(s.display_name)}</button>
+      `).join('') || '<p class="muted small">Aucun résultat.</p>'
+    } catch (e) {
+      $('#lieu-suggestions').innerHTML = '<p class="muted small">Recherche indisponible, réessayez.</p>'
+    }
+  }, 400)
+}
+
+function choisirLieu(i) {
+  const s = lieuSuggestions[i]
+  if (!s) return
+  lieuChoisi = s
+  // Nom court : les 2 premiers segments du display_name (ex: "Rome, Roma Capitale")
+  $('#lieu-recherche').value = s.display_name.split(',').slice(0, 2).map(p => p.trim()).join(', ')
+  $('#lieu-suggestions').innerHTML = ''
+  const info = $('#lieu-choisi-info')
+  info.textContent = `✓ ${s.display_name}`
+  info.classList.remove('hidden')
+  $('#lieu-confirmer').disabled = false
+}
+
+async function confirmerLieu() {
+  if (!lieuChoisi) return
+  const annee = parseInt($('#lieu-annee').value) || null
+  await db.from('lieux_visites').insert({
+    nom: $('#lieu-recherche').value.trim() || lieuChoisi.display_name,
+    latitude: parseFloat(lieuChoisi.lat),
+    longitude: parseFloat(lieuChoisi.lon),
+    annee,
+  })
+  fermerAjoutLieu()
+  initCarte()
+}
+
+async function supprimerLieu(id, ev) {
+  if (ev) ev.stopPropagation()
+  const lieu = lieuxCache.find(l => l.id === id)
+  if (!confirm(`Supprimer « ${lieu ? lieu.nom : 'ce lieu'} » ?`)) return
+  await db.from('lieux_visites').delete().eq('id', id)
+  initCarte()
 }
 
 // =====================================================
