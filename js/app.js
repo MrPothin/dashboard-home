@@ -118,6 +118,16 @@ $$('.btn-logout').forEach(b => b.addEventListener('click', async () => {
 // =====================================================
 // MODULE ACCUEIL
 // =====================================================
+async function meteoFetch(lat, lon) {
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m&timezone=Europe/Paris`)
+    const json = await res.json()
+    return json.current
+  } catch (e) {
+    return null // météo indisponible : on affiche sans
+  }
+}
+
 function meteoIcon(code) {
   if (code === 0) return '☀️'
   if (code <= 3) return '⛅'
@@ -171,13 +181,11 @@ async function initAccueil() {
   const totalDepenses = totalFixes + totalAbonnements + totalVariables
   const solde = totalRevenus - totalDepenses - totalEpargne
 
-  // Météo Manosque (Open-Meteo, gratuit, sans clé)
-  let meteo = null
-  try {
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=43.8367&longitude=5.7869&current=temperature_2m,weathercode,windspeed_10m&timezone=Europe/Paris')
-    const json = await res.json()
-    meteo = json.current
-  } catch (e) { /* météo indisponible : on affiche sans */ }
+  // Météo Open-Meteo (gratuit, sans clé) : Manosque + lac de Sainte-Croix
+  const [meteo, meteoLac] = await Promise.all([
+    meteoFetch(43.8367, 5.7869),
+    meteoFetch(43.7667, 6.1333),
+  ])
 
   $('#content').innerHTML = `
     <div class="accueil-header">
@@ -253,6 +261,27 @@ async function initAccueil() {
         <p class="accueil-card-label">Classez et comparez vos avis à deux !</p>
       </div>
 
+    </div>
+
+    <!-- WEBCAM AIGUINES + MÉTÉO LAC DE SAINTE-CROIX -->
+    <div class="spot-grid">
+      <div class="card">
+        <h3>📷 Aiguines — Lac de Sainte-Croix</h3>
+        <iframe class="webcam-frame" src="https://www.skaping.com/aiguines"
+          loading="lazy" allowfullscreen title="Webcam Aiguines — Lac de Sainte-Croix"></iframe>
+      </div>
+      <div class="card">
+        <h3>🌤️ Météo — Lac de Sainte-Croix</h3>
+        ${meteoLac ? `
+        <div class="meteo-widget meteo-widget-inline">
+          <span class="meteo-icon">${meteoIcon(meteoLac.weathercode)}</span>
+          <div class="meteo-infos">
+            <strong>${Math.round(meteoLac.temperature_2m)}°C</strong>
+            <small>${meteoLabel(meteoLac.weathercode)}</small>
+            <small>💨 ${Math.round(meteoLac.windspeed_10m)} km/h · Lac de Sainte-Croix</small>
+          </div>
+        </div>` : '<p class="muted">Météo indisponible.</p>'}
+      </div>
     </div>
   `
 }

@@ -366,6 +366,29 @@ body.light .badge-purple { color: #8B5CF6; }
 .accueil-mini-stats span { font-size: 0.72rem; color: var(--text-muted); }
 .accueil-mini-stats strong { font-size: 0.92rem; }
 
+/* Webcam Aiguines + météo lac de Sainte-Croix */
+.spot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.webcam-frame {
+  width: 100%;
+  height: 180px;
+  border: none;
+  border-radius: 12px;
+  background: #0a0a12;
+  display: block;
+}
+
+.meteo-widget-inline {
+  border: none;
+  box-shadow: none;
+  padding: 8px 0;
+}
+
 .accueil-leasing-row {
   display: flex;
   align-items: center;
@@ -939,6 +962,8 @@ body.light .badge-purple { color: #8B5CF6; }
 
   .accueil-header { flex-direction: row; justify-content: space-between; align-items: center; }
   .accueil-grid { grid-template-columns: repeat(2, 1fr); }
+  .spot-grid { grid-template-columns: 1fr 1fr; }
+  .webcam-frame { height: 250px; }
 
   .budget-grid { grid-template-columns: repeat(2, 1fr); }
   .donut-wrap { flex-direction: row; }
