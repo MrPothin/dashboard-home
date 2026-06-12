@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0F0F1A" />
   <title>Dashboard — Wesley & Lauriane</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -13,8 +14,8 @@
     <div class="login-card">
       <h1>👋 Bon retour</h1>
       <p class="subtitle">Wesley & Lauriane</p>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Mot de passe" />
+      <input type="email" id="email" placeholder="Email" autocomplete="username" />
+      <input type="password" id="password" placeholder="Mot de passe" autocomplete="current-password" />
       <button id="btn-login">Se connecter</button>
       <p id="login-error" class="error"></p>
     </div>
@@ -22,34 +23,27 @@
 
   <!-- PAGE DASHBOARD -->
   <div id="page-dashboard" class="page">
-    <nav class="sidebar">
+
+    <!-- Barre du haut (mobile uniquement) -->
+    <header class="topbar">
       <div class="logo">🏠 Dashboard</div>
-      <a href="#" class="nav-link active" data-page="accueil">🏠 Accueil</a>
-      <a href="#" class="nav-link" data-page="budget">💰 Budget</a>
-      <a href="#" class="nav-link" data-page="leasing">🚗 Leasing</a>
+      <div class="topbar-actions">
+        <button class="btn-icon btn-theme" title="Thème">🌙</button>
+        <button class="btn-icon btn-logout" title="Déconnexion">⏻</button>
+      </div>
+    </header>
+
+    <!-- Sidebar PC / barre du bas mobile (liens générés par app.js) -->
+    <nav class="sidebar">
+      <div class="logo sidebar-logo">🏠 Dashboard</div>
+      <div id="nav-links" class="nav-links"></div>
       <div class="nav-bottom">
-        <button id="btn-logout">Déconnexion</button>
-        <button id="btn-theme">🌙 Thème</button>
+        <button class="btn-theme">🌙 Thème</button>
+        <button class="btn-logout">Déconnexion</button>
       </div>
     </nav>
-    <main class="content">
-      <div id="section-accueil" class="section active">
-       <div id="accueil-content"></div>
-    </div>
-      <div id="section-budget" class="section">
-        <div class="section-header">
-            <h2>💰 Budget mensuel</h2>
-            <select id="budget-selecteur-mois"></select>
-        </div>
-        <div id="budget-content"></div>
-    </div>
-      <div id="section-leasing" class="section">
-         <div class="section-header">
-          <h2>🚗 Leasing & Crédits</h2>
-        </div>
-        <div id="leasing-content"></div>
-     </div>
-    </main>
+
+    <main id="content" class="content"></main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
